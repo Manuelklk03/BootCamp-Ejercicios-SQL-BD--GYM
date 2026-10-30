@@ -1,0 +1,17 @@
+socio     | actividad |     fecha_hora      
+--------------+-----------+---------------------
+ Ana Pérez    | Spinning  | 2026-11-02 09:00:00
+ Ana Pérez    | Pilates   | 2026-11-03 10:00:00
+ Ana Pérez    | Crossfit  | 2026-11-05 20:00:00
+ Hugo Sanz    | Spinning  | 2026-11-02 09:00:00
+ Hugo Sanz    | Crossfit  | 2026-11-05 20:00:00
+ Lucía Ruiz   | Pilates   | 2026-11-03 10:00:00
+ Lucía Ruiz   | Zumba     | 2026-11-04 18:30:00
+ Luis García  | Spinning  | 2026-11-02 09:00:00
+ Luis García  | Yoga      | 2026-11-02 18:00:00
+ Marta López  | Yoga      | 2026-11-02 18:00:00
+ Marta López  | Zumba     | 2026-11-04 18:30:00
+ Pablo Martín | Spinning  | 2026-11-03 19:00:00
+ Sara Gil     | Zumba     | 2026-11-04 18:30:00
+ Sara Gil     | Crossfit  | 2026-11-05 20:00:00
+(14 rows)
