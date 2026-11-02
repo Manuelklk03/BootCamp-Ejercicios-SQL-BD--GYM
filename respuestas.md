@@ -255,7 +255,19 @@ Creo que dará error porque el plan con `id = 99` no existe en la tabla `planes`
 
 La restricción `FOREIGN KEY` de `plan_id` impide que un socio tenga asignado un plan que no existe.
 
-**Error real y traducción:** Pendiente de ejecutar.
+**Error real:**
+
+```text
+ERROR:  insert or update on table "socios" violates foreign key constraint "socios_plan_id_fkey"
+DETAIL:  Key (plan_id)=(99) is not present in table "planes".
+```
+
+**Traducción:** No se puede insertar a Nora porque el plan 99 no existe.
+
+**Restricción:** `socios_plan_id_fkey`: clave ajena de `socios.plan_id` a `planes.id`.
+
+**Integridad:** la operación se ha rechazado y todas las filas siguen iguales.
+
 
 #### B3.2 — Insertar un socio con el email de Ana
 
@@ -265,7 +277,19 @@ Dará error porque `ana@gym.com` ya pertenece a otro socio.
 
 La restricción `UNIQUE` de `email` evita que dos socios tengan el mismo correo.
 
-**Error real y traducción:** Pendiente de ejecutar.
+**Error real:**
+
+```text
+ERROR:  duplicate key value violates unique constraint "socios_email_key"
+DETAIL:  Key (email)=(ana@gym.com) already exists.
+```
+
+**Traducción:** El correo ana@gym.com ya está registrado. No puede pertenecer a dos socios.
+
+**Restricción:** `socios_email_key`: restricción `UNIQUE` de `socios.email`.
+
+**Integridad:** la operación se ha rechazado y todas las filas siguen iguales.
+
 
 #### B3.3 — Crear una segunda tarjeta para Ana
 
@@ -275,7 +299,19 @@ Creo que dará error porque Ana ya tiene una tarjeta asignada.
 
 El `UNIQUE` de `socio_id` impide que podamos asignarle otra.
 
-**Error real y traducción:** Pendiente de ejecutar.
+**Error real:**
+
+```text
+ERROR:  duplicate key value violates unique constraint "tarjetas_socio_id_key"
+DETAIL:  Key (socio_id)=(1) already exists.
+```
+
+**Traducción:** Ana, con socio_id = 1, ya tiene tarjeta. No se le puede asignar otra.
+
+**Restricción:** `tarjetas_socio_id_key`: restricción `UNIQUE` de `tarjetas.socio_id`; mantiene la relación 1:1.
+
+**Integridad:** la operación se ha rechazado y todas las filas siguen iguales.
+
 
 #### B3.4 — Ana reserva otra vez el Spinning del lunes
 
@@ -285,7 +321,19 @@ Dará error porque Ana ya tiene una reserva para esa clase.
 
 La restricción `UNIQUE(socio_id, clase_id)` evita que se repita la misma combinación.
 
-**Error real y traducción:** Pendiente de ejecutar.
+**Error real:**
+
+```text
+ERROR:  duplicate key value violates unique constraint "reservas_socio_id_clase_id_key"
+DETAIL:  Key (socio_id, clase_id)=(1, 1) already exists.
+```
+
+**Traducción:** La pareja socio_id = 1 y clase_id = 1 ya está reservada. Ana no puede reservar esa clase dos veces.
+
+**Restricción:** `reservas_socio_id_clase_id_key`: `UNIQUE (socio_id, clase_id)`.
+
+**Integridad:** la operación se ha rechazado y todas las filas siguen iguales.
+
 
 #### B3.5 — Crear una reserva para una clase que no existe
 
@@ -295,7 +343,19 @@ Creo que dará error porque estamos intentando reservar una clase con `id = 50` 
 
 La clave ajena `clase_id` no permite guardar reservas de clases que no estén registradas.
 
-**Error real y traducción:** Pendiente de ejecutar.
+**Error real:**
+
+```text
+ERROR:  insert or update on table "reservas" violates foreign key constraint "reservas_clase_id_fkey"
+DETAIL:  Key (clase_id)=(50) is not present in table "clases".
+```
+
+**Traducción:** La clase 50 no existe, así que no se puede guardar una reserva que apunte a ella.
+
+**Restricción:** `reservas_clase_id_fkey`: clave ajena de `reservas.clase_id` a `clases.id`.
+
+**Integridad:** la operación se ha rechazado y todas las filas siguen iguales.
+
 
 #### B3.6 — Borrar el plan Básico
 
@@ -305,7 +365,19 @@ Dará error porque hay socios que tienen contratado ese plan.
 
 La clave ajena `plan_id` de la tabla `socios` impide borrarlo mientras siga teniendo socios asociados.
 
-**Error real y traducción:** Pendiente de ejecutar.
+**Error real:**
+
+```text
+ERROR:  update or delete on table "planes" violates foreign key constraint "socios_plan_id_fkey" on table "socios"
+DETAIL:  Key (id)=(1) is still referenced from table "socios".
+```
+
+**Traducción:** El plan Básico sigue asignado a socios. Borrarlo los dejaría apuntando a un plan inexistente.
+
+**Restricción:** `socios_plan_id_fkey`: clave ajena de `socios.plan_id` a `planes.id`; no hay borrado en cascada.
+
+**Integridad:** la operación se ha rechazado y todas las filas siguen iguales.
+
 
 #### B3.7 — Borrar el plan Mañanas
 
@@ -313,7 +385,39 @@ La clave ajena `plan_id` de la tabla `socios` impide borrarlo mientras siga teni
 
 En este caso debería dejar borrarlo porque no hay ningún socio que tenga contratado ese plan.
 
-**Resultado real:** Pendiente de ejecutar.
+**Resultado real:**
+
+```text
+BEGIN
+ id | nombre  | precio_mensual 
+----+---------+----------------
+  5 | Mañanas |          19.90
+(1 row)
+
+DELETE 1
+ planes_mananas_tras_borrar 
+----------------------------
+                          0
+(1 row)
+
+INSERT 0 1
+ id |   nombre   | precio_mensual 
+----+------------+----------------
+  1 | Básico     |          29.90
+  2 | Completo   |          44.90
+  3 | Estudiante |          24.90
+  6 | Mañanas    |          19.90
+(4 rows)
+
+COMMIT
+```
+
+**Traducción:** `DELETE 1` confirma que se ha borrado Mañanas. La consulta posterior devuelve 0 planes con ese nombre. Después, `INSERT 0 1` confirma que se ha vuelto a insertar.
+
+**Restricción:** no se infringe ninguna clave ajena porque ningún socio tiene contratado Mañanas.
+
+**Integridad:** vuelven a existir los cuatro planes y los demás datos de B2 no han cambiado. Mañanas tenía id 5 y ahora tiene id 6; el nuevo identificador lo genera PostgreSQL.
+
 
 #### B3.8 — ¿Por qué B3.6 falla y B3.7 funciona?
 
@@ -323,11 +427,63 @@ La clave ajena impide borrar Básico porque dejaríamos socios apuntando a un pl
 
 ---
 
+
+### Ejercicio B4 — Comprobación de las consultas
+
+Las diez consultas están en `gimnasio.sql`. Las he ejecutado antes de B5, con estos resultados:
+
+| Consulta | Resultado real |
+| --- | --- |
+| B4.1 | 8 socios con su plan y precio. |
+| B4.2 | 7 clases con su monitor. |
+| B4.3 | 8 socios; Diego aparece con tarjeta NULL. |
+| B4.4 | Solo Diego Vidal. |
+| B4.5 | Básico: 3; Completo: 3; Estudiante: 2; Mañanas: 0. |
+| B4.6 | 14 reservas; Ana aparece 3 veces. |
+| B4.7 | Ana Pérez, Hugo Sanz y Luis García. |
+| B4.8 | 7 clases; la clase 6 aparece con 0 reservas. |
+| B4.9 | Solo Rubén Castro. |
+| B4.10 | 7 parejas monitor–especialidad. |
+
+**Captura de B4.6:**
+
+![Resultado real de las reservas con socio y clase](capturas/b4-6-reservas.png)
+
+La salida de texto original está en [capturas/b4-6-reservas.txt](capturas/b4-6-reservas.txt). La captura corresponde a los datos anteriores a B5; al repetir la consulta después, cambian las reservas.
+
+---
+
 ### Ejercicio B4.11 — ¿Por qué Ana aparece tres veces?
 
 No es un error. Ana aparece tres veces porque tiene tres reservas diferentes y la consulta muestra una fila por cada reserva.
 
 Por eso un mismo socio puede aparecer varias veces si está apuntado a distintas clases.
+
+---
+
+### Ejercicio B5 — Modificar y borrar
+
+Antes de cada `UPDATE` y `DELETE` he consultado las filas con el mismo `WHERE`.
+
+| Apartado | Resultado real | Comprobación |
+| --- | --- | --- |
+| B5.1 | `UPDATE 1` | Luis tiene ahora el plan Completo (id 2). |
+| B5.2 | `UPDATE 1` | La tarjeta TJ-0004 de Hugo está activa. |
+| B5.3 | `INSERT 0 1` | Diego tiene la tarjeta activa TJ-0008. |
+| B5.4 | `INSERT 0 1` | Diego reserva la clase 6 con fecha 2026-11-02. |
+| B5.5 | `DELETE 1` | Desaparece solo la reserva de Luis para la clase 2; conserva la de la clase 1. |
+| B5.6 | Error en la baja directa; después, tres `DELETE 1` | Se eliminan la reserva de Pablo, su tarjeta y su ficha, en ese orden. |
+
+**Error real de B5.6:**
+
+```text
+ERROR:  update or delete on table "socios" violates foreign key constraint "tarjetas_socio_id_fkey" on table "tarjetas"
+DETAIL:  Key (id)=(6) is still referenced from table "tarjetas".
+```
+
+**Traducción:** no se puede borrar a Pablo porque todavía tiene una tarjeta que apunta a su id.
+
+**Restricción:** `tarjetas_socio_id_fkey`, clave ajena de `tarjetas.socio_id` a `socios.id`. Pablo también tiene una reserva, así que quitar solo la tarjeta no basta. He borrado primero su reserva y su tarjeta y, por último, al socio, dentro de una transacción. Las tablas hijas deben dejar de apuntar a él antes de borrarlo.
 
 ---
 
@@ -366,3 +522,31 @@ Con la tabla intermedia podemos guardar cada relación en una fila mediante dos 
 Porque la fecha pertenece a una reserva concreta.
 
 Un socio puede reservar varias clases en días diferentes y cada reserva tiene su propia fecha.
+
+
+---
+
+## Comprobación final — 30 de octubre de 2026
+
+- PostgreSQL 17.11, contenedor `postgres-sql`, base `gimnasio`, usuario `alumno`.
+- B3.1–B3.6 rechazadas por las restricciones esperadas, sin cambios en las filas.
+- B3.7 borró y repuso Mañanas; antes de B4 se mantenían todos los datos B2.
+- B4: ejecutadas las diez consultas y guardado el resultado de B4.6 antes de B5.
+- B5: realizados solo los cambios pedidos, sin filas huérfanas.
+- Siguen existiendo las ocho tablas.
+- El archivo SQL completo se ha validado en un esquema aislado, con aserciones sobre los cambios de B5, y esa prueba se ha revertido con ROLLBACK.
+
+| Tabla | Tras B2 y B3 | Tras B5 |
+| --- | ---: | ---: |
+| `planes` | 4 | 4 |
+| `socios` | 8 | 7 |
+| `tarjetas` | 7 | 7 |
+| `monitores` | 4 | 4 |
+| `clases` | 7 | 7 |
+| `reservas` | 14 | 13 |
+| `especialidades` | 5 | 5 |
+| `monitor_especialidades` | 7 | 7 |
+
+Las diferencias finales son las que pide B5: Pablo se da de baja y se eliminan sus relaciones; Diego obtiene tarjeta y reserva; Luis cancela una reserva. Los ids automáticos pueden tener saltos incluso cuando un INSERT falla: las secuencias no se revierten. No he reiniciado tablas ni secuencias.
+
+`gimnasio.sql` se ejecuta completo sobre un esquema vacío para crear B1, cargar B2, consultar B4 y aplicar B5. Las pruebas intencionadas de B3 y la baja fallida de B5.6 están comentadas para activarlas individualmente en su momento. No se debe ejecutar de nuevo B1/B2 sobre estas tablas ya pobladas. El reto opcional no forma parte de esta entrega.
